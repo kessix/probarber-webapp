@@ -15,10 +15,6 @@ npm install
 npm run dev
 ```
 
-Barbearias de exemplo para testar os três modos de agendamento (dados em `src/lib/barbershops.ts`):
+A página `/{slug}` lê a barbearia, os serviços e os horários ocupados do Supabase (as barbearias são criadas pelo app). Variáveis de ambiente em `.env.example`.
 
-- `/doisirmaos`: pagar no app (Pix) ou na barbearia
-- `/studiodobarba`: pagamento obrigatório (Pix)
-- `/barber013`: agendamento comum
-
-Os dados e o pagamento Pix ainda são simulados. Slugs reservados ficam em `RESERVED_SLUGS`.
+O agendamento do cliente é gravado pela função `create_appointment` do banco (veja `supabase/schema.sql` no repositório do app). O Pix usa a AbacatePay (chave de teste `abc_dev_`).

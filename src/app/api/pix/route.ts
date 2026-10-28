@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Requisição inválida." }, { status: 400 });
   }
 
-  const shop = getBarbershop(body.slug);
+  const shop = await getBarbershop(body.slug);
   const service = shop?.services.find((s) => s.id === body.serviceId);
   if (!shop || !service) return NextResponse.json({ error: "Serviço não encontrado." }, { status: 404 });
   if (shop.mode === "comum") {

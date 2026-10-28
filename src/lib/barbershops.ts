@@ -1,3 +1,6 @@
+import { cache } from "react";
+import { supabase } from "@/lib/supabase";
+
 /**
  * Como o cliente agenda e paga. Mesma definição do app (probarber-app):
  * - comum: sem pagamento no app, recebe na barbearia
@@ -12,7 +15,7 @@ export type Barbershop = {
   /** Vai na URL pública: probarberapp.com.br/{slug} */
   slug: string;
   name: string;
-  handle: string;
+  instagram: string | null;
   /** Cor da marca usada nos destaques da página. */
   color: string;
   mode: BookingMode;
@@ -23,54 +26,49 @@ export type Barbershop = {
   closedWeekdays: number[];
 };
 
-/** Slugs que pertencem a rotas fixas do sistema e não podem ser de uma barbearia. */
-export const RESERVED_SLUGS = ["admin", "api", "login", "cadastro", "app"] as const;
+type Row = {
+  slug: string;
+  name: string;
+  instagram: string | null;
+  brand_color: string;
+  booking_mode: BookingMode;
+  opening_hour: number;
+  closing_hour: number;
+  closed_weekdays: number[];
+  services: { id: string; name: string; price_cents: number; duration_minutes: number; active: boolean }[];
+};
 
-/** Dados de exemplo até existir backend. */
-export const BARBERSHOPS: Barbershop[] = [
-  {
-    slug: "doisirmaos",
-    name: "Barbearia Dois Irmãos",
-    handle: "@doisirmaosbarber",
-    color: "#d4a24c",
-    mode: "pagamento_opcional",
-    services: [
-      { id: "corte", name: "Corte", price: 45, minutes: 40 },
-      { id: "degrade", name: "Degradê", price: 45, minutes: 45 },
-      { id: "barba", name: "Barba", price: 35, minutes: 30 },
-      { id: "corte-barba", name: "Corte + barba", price: 70, minutes: 70 },
-    ],
-    hours: { from: 9, to: 19 },
-    closedWeekdays: [0],
-  },
-  {
-    slug: "studiodobarba",
-    name: "Studio do Barba",
-    handle: "@studiodobarba",
-    color: "#4aa57a",
-    mode: "pagamento_obrigatorio",
-    services: [
-      { id: "corte", name: "Corte", price: 50, minutes: 40 },
-      { id: "barba", name: "Barba", price: 40, minutes: 30 },
-      { id: "corte-barba", name: "Corte + barba", price: 80, minutes: 70 },
-    ],
-    hours: { from: 10, to: 20 },
-    closedWeekdays: [0, 1],
-  },
-  {
-    slug: "barber013",
-    name: "Barber 013",
-    handle: "@barber013",
-    color: "#6a8fd8",
-    mode: "comum",
-    services: [
-      { id: "corte", name: "Corte", price: 40, minutes: 40 },
-      { id: "sobrancelha", name: "Sobrancelha", price: 15, minutes: 15 },
-      { id: "corte-barba", name: "Corte + barba", price: 65, minutes: 70 },
-    ],
-    hours: { from: 9, to: 18 },
-    closedWeekdays: [0],
-  },
-];
+// Mesma regra de endereço do banco: evita consultar com lixo vindo da URL.
+const SLUG = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
 
-export const getBarbershop = (slug: string) => BARBERSHOPS.find((b) => b.slug === slug);
+/**
+ * Barbearia pública pelo endereço. Devolve null se não existir.
+ * Falha de rede ou do banco lança erro, para não virar um 404 enganoso.
+ * `cache` evita ler duas vezes na mesma requisição (página e metadados).
+ */
+export const getBarbershop = cache(async (slug: string): Promise<Barbershop | null> => {
+  if (!SLUG.test(slug)) return null;
+
+  const { data, error } = await supabase
+    .from("barbershops")
+    .select(
+      "slug, name, instagram, brand_color, booking_mode, opening_hour, closing_hour, closed_weekdays, services(id, name, price_cents, duration_minutes, active)",
+    )
+    .eq("slug", slug)
+    .maybeSingle<Row>();
+  if (error) throw new Error(`Falha ao carregar a barbearia: ${error.message}`);
+  if (!data) return null;
+
+  return {
+    slug: data.slug,
+    name: data.name,
+    instagram: data.instagram,
+    color: data.brand_color,
+    mode: data.booking_mode,
+    hours: { from: data.opening_hour, to: data.closing_hour },
+    closedWeekdays: data.closed_weekdays,
+    services: data.services
+      .filter((s) => s.active)
+      .map((s) => ({ id: s.id, name: s.name, price: s.price_cents / 100, minutes: s.duration_minutes })),
+  };
+});

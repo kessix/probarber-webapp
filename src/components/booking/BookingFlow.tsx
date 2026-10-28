@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { Check, ChevronLeft, Clock, Copy, QrCode, Scissors, Store } from "lucide-react";
 import type { Barbershop, Service } from "@/lib/barbershops";
+import { supabase } from "@/lib/supabase";
 import { formatBRL, formatDayLong, formatTime, fromDateKey, maskPhone, toDateKey, weekdayShort } from "@/lib/format";
 import "./booking.css";
 
@@ -19,22 +20,17 @@ const subscribe = () => () => {};
 const getNow = () => Math.floor(Date.now() / 60_000) * 60_000;
 const getServerNow = () => null;
 
-/** Hash estável só para simular horários já ocupados até existir backend. */
-function hash(text: string) {
-  let h = 0;
-  for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
+// O Brasil não tem horário de verão: o fuso de Brasília é fixo em -03:00.
+const BR_OFFSET = "-03:00";
+const MIN_NOTICE_MS = 30 * 60_000;
 
-function buildSlots(shop: Barbershop, service: Service, dateKey: string, nowMs: number) {
-  const now = new Date(nowMs);
-  const isToday = dateKey === toDateKey(now);
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+const slotInstant = (dateKey: string, minutes: number) => Date.parse(`${dateKey}T${formatTime(minutes)}:00${BR_OFFSET}`);
+
+function buildSlots(shop: Barbershop, service: Service, dateKey: string, nowMs: number, taken: Set<number>) {
   const slots: { time: string; available: boolean }[] = [];
   for (let m = shop.hours.from * 60; m + service.minutes <= shop.hours.to * 60; m += SLOT_MINUTES) {
-    const past = isToday && m <= nowMin + 30;
-    const taken = hash(`${shop.slug}${dateKey}${m}`) % 4 === 0;
-    slots.push({ time: formatTime(m), available: !past && !taken });
+    const at = slotInstant(dateKey, m);
+    slots.push({ time: formatTime(m), available: at > nowMs + MIN_NOTICE_MS && !taken.has(at) });
   }
   return slots;
 }
@@ -52,6 +48,11 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
   const [pix, setPix] = useState<Pix | null>(null);
   const [pixError, setPixError] = useState<string | null>(null);
   const [simulating, setSimulating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  // Horários ocupados do dia selecionado, vindos do banco.
+  const [taken, setTaken] = useState<{ day: string; at: Set<number> } | null>(null);
+  const [reloadTaken, setReloadTaken] = useState(0);
 
   const days = useMemo(() => {
     if (nowMs === null) return [];
@@ -65,10 +66,27 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
   }, [nowMs, shop.closedWeekdays]);
 
   const selectedDay = dateKey ?? (days[0] ? toDateKey(days[0]) : null);
+  const slotsReady = taken !== null && taken.day === selectedDay;
   const slots = useMemo(
-    () => (nowMs !== null && service && selectedDay ? buildSlots(shop, service, selectedDay, nowMs) : []),
-    [nowMs, shop, service, selectedDay],
+    () =>
+      nowMs !== null && service && selectedDay && taken && taken.day === selectedDay
+        ? buildSlots(shop, service, selectedDay, nowMs, taken.at)
+        : [],
+    [nowMs, shop, service, selectedDay, taken],
   );
+
+  useEffect(() => {
+    if (!selectedDay) return;
+    let active = true;
+    supabase.rpc("taken_slots", { p_slug: shop.slug, p_day: selectedDay }).then(({ data }) => {
+      if (!active) return;
+      const rows = (data ?? []) as { starts_at: string }[];
+      setTaken({ day: selectedDay, at: new Set(rows.map((r) => Date.parse(r.starts_at))) });
+    });
+    return () => {
+      active = false;
+    };
+  }, [shop.slug, selectedDay, reloadTaken]);
 
   const phoneDigits = phone.replace(/\D/g, "");
   const dadosOk = name.trim().length >= 2 && (phoneDigits.length === 10 || phoneDigits.length === 11);
@@ -77,7 +95,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
     horario: "servico",
     dados: "horario",
     pagamento: "dados",
-    pix: shop.mode === "pagamento_opcional" ? "pagamento" : "dados",
+    // sem "voltar" no Pix: o agendamento já foi criado e segura o horário
   };
 
   // Enquanto o QR Code está na tela, consulta o pagamento a cada 3 segundos.
@@ -143,10 +161,53 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
     if (previous) setStep(previous);
   }
 
-  function afterDados() {
-    if (shop.mode === "comum") setStep("ok");
-    else if (shop.mode === "pagamento_obrigatorio") void startPix();
-    else setStep("pagamento");
+  /** Grava o agendamento no banco. O preço vem do serviço, não do navegador. */
+  async function book(payOnline: boolean) {
+    if (!service || !selectedDay || !time) return false;
+    setSaving(true);
+    setBookingError(null);
+    const startsAt = new Date(Date.parse(`${selectedDay}T${time}:00${BR_OFFSET}`)).toISOString();
+    const { error } = await supabase.rpc("create_appointment", {
+      p_slug: shop.slug,
+      p_service_id: service.id,
+      p_starts_at: startsAt,
+      p_client_name: name.trim(),
+      p_client_phone: phoneDigits,
+      p_pay_online: payOnline,
+    });
+    setSaving(false);
+    if (!error) return true;
+
+    if (error.message.includes("horario_indisponivel") || error.message.includes("horario_no_passado")) {
+      setBookingError("Esse horário não está mais disponível. Escolha outro.");
+      setTime(null);
+      setReloadTaken((n) => n + 1);
+      setStep("horario");
+    } else {
+      setBookingError("Não foi possível agendar. Tente de novo.");
+    }
+    return false;
+  }
+
+  async function afterDados() {
+    if (shop.mode === "pagamento_opcional") {
+      setStep("pagamento");
+      return;
+    }
+    const online = shop.mode === "pagamento_obrigatorio";
+    if (!(await book(online))) return;
+    if (online) await startPix();
+    else setStep("ok");
+  }
+
+  async function payWithPix() {
+    if (await book(true)) await startPix();
+  }
+
+  async function payAtShop() {
+    if (!(await book(false))) return;
+    setPaid("local");
+    setStep("ok");
   }
 
   async function copyPix() {
@@ -168,7 +229,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
         <header className="bk-head">
           <span className="bk-logo"><Scissors size={22} /></span>
           <h1>{shop.name}</h1>
-          <p>{shop.handle}</p>
+          {shop.instagram ? <p>{shop.instagram}</p> : null}
         </header>
 
         {back[step] ? (
@@ -206,6 +267,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
           <section>
             <h2>Escolha o horário</h2>
             <p className="bk-sub">{service.name} · {formatBRL(service.price)}</p>
+            {bookingError ? <p className="bk-error">{bookingError}</p> : null}
             {nowMs === null ? (
               <p className="bk-sub">Carregando horários…</p>
             ) : (
@@ -229,6 +291,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
                   })}
                 </div>
                 {day ? <p className="bk-sub">{formatDayLong(day)}</p> : null}
+                {!slotsReady ? <p className="bk-sub">Carregando horários…</p> : null}
                 <div className="bk-slots">
                   {slots.map((s) => (
                     <button
@@ -241,7 +304,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
                     </button>
                   ))}
                 </div>
-                {slots.every((s) => !s.available) ? (
+                {slotsReady && slots.every((s) => !s.available) ? (
                   <p className="bk-sub">Sem horários livres neste dia. Escolha outro dia.</p>
                 ) : null}
                 <button type="button" className="bk-cta" disabled={!time} onClick={() => setStep("dados")}>
@@ -270,8 +333,9 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
                 placeholder="(11) 91234-5678"
               />
             </label>
-            <button type="button" className="bk-cta" disabled={!dadosOk} onClick={afterDados}>
-              {shop.mode === "comum" ? "Confirmar agendamento" : "Continuar"}
+            {bookingError ? <p className="bk-error">{bookingError}</p> : null}
+            <button type="button" className="bk-cta" disabled={!dadosOk || saving} onClick={() => void afterDados()}>
+              {saving ? "Agendando…" : shop.mode === "comum" ? "Confirmar agendamento" : "Continuar"}
             </button>
           </section>
         )}
@@ -280,11 +344,13 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
           <section>
             <h2>Como você quer pagar?</h2>
             <p className="bk-sub">Total: {formatBRL(service.price)}</p>
+            {bookingError ? <p className="bk-error">{bookingError}</p> : null}
             <div className="bk-list">
               <button
                 type="button"
                 className="bk-card"
-                onClick={() => void startPix()}>
+                disabled={saving}
+                onClick={() => void payWithPix()}>
                 <span>
                   <strong><QrCode size={15} /> Pagar agora com Pix</strong>
                   <small>Seu horário fica garantido na hora.</small>
@@ -293,10 +359,8 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
               <button
                 type="button"
                 className="bk-card"
-                onClick={() => {
-                  setPaid("local");
-                  setStep("ok");
-                }}>
+                disabled={saving}
+                onClick={() => void payAtShop()}>
                 <span>
                   <strong><Store size={15} /> Pagar na barbearia</strong>
                   <small>Você paga depois do atendimento.</small>
@@ -363,7 +427,6 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
               <div><dt>Cliente</dt><dd>{name.trim()}</dd></div>
               <div><dt>Valor</dt><dd>{formatBRL(service.price)}</dd></div>
             </dl>
-            <p className="bk-demo">Demonstração: o agendamento ainda não é salvo no sistema.</p>
           </section>
         )}
       </div>
