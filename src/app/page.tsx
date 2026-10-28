@@ -1,6 +1,8 @@
 import { Boxes, CalendarCheck, CalendarDays, CreditCard, Link2, Scissors, Share2, Star, UsersRound, Wallet, BellRing, Headset, type LucideIcon } from "lucide-react";
 import { DarkZone, Faq, Metrics, NavBar, Reveal } from "@/components/Interactive";
 import { StepScreen } from "@/components/PhoneScreens";
+import { StoreButtons } from "@/components/StoreButtons";
+import { STORE_LINKS } from "@/lib/stores";
 
 const YEAR = 2026;
 const PRICE = { whole: "40", cents: "00" };
@@ -45,6 +47,7 @@ const testimonials = [
 
 const faq = [
   { q: "Como funciona o aplicativo ProBarber?", a: "O ProBarber reúne agendamentos, equipe, estoque e pagamentos em um só lugar, direto pelo celular ou computador." },
+  { q: "Como faço meu cadastro?", a: "O cadastro é feito somente pelo aplicativo ProBarber, disponível no Google Play e na App Store. Baixe o app, crie sua conta e comece o teste grátis." },
   { q: "Preciso pagar para usar o ProBarber?", a: `Você tem 30 dias de teste grátis, sem compromisso. Depois, o plano custa R$ ${PRICE.whole},${PRICE.cents} por mês por profissional cadastrado.` },
   { q: "Quais são os benefícios do agendamento online?", a: "Menos faltas, agenda organizada e uma experiência moderna para seus clientes, com confirmação automática e lembretes." },
   { q: "É seguro usar o ProBarber?", a: "Sim. Usamos criptografia e servidores seguros para proteger os dados dos seus clientes e o histórico de agendamentos." },
@@ -69,8 +72,12 @@ export default function Home() {
               <p className="eyebrow">Gestão para barbearias · Desde 2025</p>
               <h1>Simplifique a forma como você <span>administra sua barbearia</span></h1>
               <p className="lead">Não importa o tamanho do seu negócio, o ProBarber foi feito para aumentar sua produtividade e liberar você para o que importa: crescer e prosperar.</p>
+              <div id="baixar" className="download-box">
+                <p className="download-title">Baixe o app ProBarber para Android e iPhone</p>
+                <StoreButtons idPrefix="hero" />
+                <p className="download-note">O cadastro é feito somente pelo aplicativo. Baixe, crie sua conta e comece os 30 dias de teste grátis.</p>
+              </div>
               <div className="hero-actions">
-                <a id="hero-cta" href="#precos" className="btn btn-gold">Começar teste grátis →</a>
                 <a id="hero-more" href="#recursos" className="btn btn-ghost">Ver recursos</a>
               </div>
               <div className="rating">
@@ -183,7 +190,7 @@ export default function Home() {
                 <p>Depois do teste, se você gostar, o valor é apenas</p>
                 <div className="price"><sup>R$</sup>{PRICE.whole},{PRICE.cents}<span>/mês</span></div>
                 <small>por profissional cadastrado.</small>
-                <a id="pricing-cta" href="#" className="btn btn-primary" style={{ marginTop: 28, alignSelf: "flex-start" }}>Começar agora →</a>
+                <a id="pricing-cta" href="#baixar" className="btn btn-primary" style={{ marginTop: 28, alignSelf: "flex-start" }}>Baixar o app →</a>
               </div>
             </div>
           </Reveal>
@@ -206,8 +213,8 @@ export default function Home() {
             <div>
               <p style={{ margin: 0 }}>Downloads</p>
               <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-                <a id="dl-android" href="#" className="btn btn-ghost" style={{ borderColor: "rgba(212,162,76,.35)" }}>Google Play</a>
-                <a id="dl-ios" href="#" className="btn btn-ghost" style={{ borderColor: "rgba(212,162,76,.35)" }}>App Store</a>
+                <a id="dl-android" href={STORE_LINKS.android} className="btn btn-ghost" style={{ borderColor: "rgba(212,162,76,.35)" }}>Google Play</a>
+                <a id="dl-ios" href={STORE_LINKS.ios} className="btn btn-ghost" style={{ borderColor: "rgba(212,162,76,.35)" }}>App Store</a>
               </div>
             </div>
           </div>

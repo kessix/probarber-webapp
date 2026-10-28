@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { Check, ChevronLeft, Clock, Copy, QrCode, Scissors, Store } from "lucide-react";
 import type { Barbershop, Service } from "@/lib/barbershops";
 import { formatBRL, formatDayLong, formatTime, fromDateKey, maskPhone, toDateKey, weekdayShort } from "@/lib/format";
@@ -8,6 +9,7 @@ import "./booking.css";
 
 type Step = "servico" | "horario" | "dados" | "pagamento" | "pix" | "ok";
 type Paid = "pix" | "local" | null;
+type Pix = { id: string; brCode: string; qrCode: string; expiresAt: string; devMode: boolean };
 
 const DAYS_AHEAD = 10;
 const SLOT_MINUTES = 30;
@@ -47,6 +49,9 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
   const [phone, setPhone] = useState("");
   const [paid, setPaid] = useState<Paid>(null);
   const [copied, setCopied] = useState(false);
+  const [pix, setPix] = useState<Pix | null>(null);
+  const [pixError, setPixError] = useState<string | null>(null);
+  const [simulating, setSimulating] = useState(false);
 
   const days = useMemo(() => {
     if (nowMs === null) return [];
@@ -67,7 +72,6 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
 
   const phoneDigits = phone.replace(/\D/g, "");
   const dadosOk = name.trim().length >= 2 && (phoneDigits.length === 10 || phoneDigits.length === 11);
-  const pixCode = service ? `DEMO-PIX-${shop.slug.toUpperCase()}-${Math.round(service.price * 100)}` : "";
 
   const back: Partial<Record<Step, Step>> = {
     horario: "servico",
@@ -76,15 +80,79 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
     pix: shop.mode === "pagamento_opcional" ? "pagamento" : "dados",
   };
 
+  // Enquanto o QR Code está na tela, consulta o pagamento a cada 3 segundos.
+  useEffect(() => {
+    if (step !== "pix" || !pix) return;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/pix/${pix.id}`);
+        const data = (await res.json()) as { status?: string };
+        if (data.status === "PAID") {
+          setPaid("pix");
+          setStep("ok");
+        } else if (data.status === "EXPIRED" || data.status === "CANCELLED") {
+          setPix(null);
+          setPixError("O Pix expirou. Gere um novo código.");
+        }
+      } catch {
+        /* falha de rede passageira: tenta de novo no próximo ciclo */
+      }
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [step, pix]);
+
+  async function startPix() {
+    if (!service) return;
+    setPix(null);
+    setPixError(null);
+    setStep("pix");
+    try {
+      const res = await fetch("/api/pix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: shop.slug, serviceId: service.id }),
+      });
+      const data = (await res.json()) as Partial<Pix> & { error?: string; qrCode?: string };
+      if (!res.ok || !data.id || !data.brCode || !data.qrCode || !data.expiresAt) {
+        setPixError(data.error ?? "Não foi possível gerar o Pix. Tente de novo.");
+        return;
+      }
+      setPix({ id: data.id, brCode: data.brCode, qrCode: data.qrCode, expiresAt: data.expiresAt, devMode: Boolean(data.devMode) });
+    } catch {
+      setPixError("Sem conexão. Verifique a internet e tente de novo.");
+    }
+  }
+
+  async function simulatePayment() {
+    if (!pix) return;
+    setSimulating(true);
+    try {
+      await fetch(`/api/pix/${pix.id}/simulate`, { method: "POST" });
+      // a confirmação chega pela consulta periódica acima
+    } finally {
+      setSimulating(false);
+    }
+  }
+
+  function goBack() {
+    if (step === "pix") {
+      setPix(null);
+      setPixError(null);
+    }
+    const previous = back[step];
+    if (previous) setStep(previous);
+  }
+
   function afterDados() {
     if (shop.mode === "comum") setStep("ok");
-    else if (shop.mode === "pagamento_obrigatorio") setStep("pix");
+    else if (shop.mode === "pagamento_obrigatorio") void startPix();
     else setStep("pagamento");
   }
 
   async function copyPix() {
+    if (!pix) return;
     try {
-      await navigator.clipboard.writeText(pixCode);
+      await navigator.clipboard.writeText(pix.brCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -104,7 +172,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
         </header>
 
         {back[step] ? (
-          <button type="button" className="bk-back" onClick={() => setStep(back[step]!)}>
+          <button type="button" className="bk-back" onClick={goBack}>
             <ChevronLeft size={16} /> Voltar
           </button>
         ) : null}
@@ -216,7 +284,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
               <button
                 type="button"
                 className="bk-card"
-                onClick={() => setStep("pix")}>
+                onClick={() => void startPix()}>
                 <span>
                   <strong><QrCode size={15} /> Pagar agora com Pix</strong>
                   <small>Seu horário fica garantido na hora.</small>
@@ -244,25 +312,37 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
             <p className="bk-sub">
               {shop.mode === "pagamento_obrigatorio"
                 ? "O horário só é confirmado depois do pagamento."
-                : "Copie o código e pague no app do seu banco."}
+                : "Escaneie o QR Code ou copie o código no app do seu banco."}
             </p>
             <div className="bk-total"><small>Total</small><b>{formatBRL(service.price)}</b></div>
-            <div className="bk-pix">
-              <code>{pixCode}</code>
-              <button type="button" className="bk-ghost" onClick={copyPix}>
-                {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar código</>}
-              </button>
-            </div>
-            <p className="bk-demo">Demonstração: o pagamento ainda é simulado.</p>
-            <button
-              type="button"
-              className="bk-cta"
-              onClick={() => {
-                setPaid("pix");
-                setStep("ok");
-              }}>
-              Já fiz o pagamento
-            </button>
+
+            {pixError ? (
+              <>
+                <p className="bk-error">{pixError}</p>
+                <button type="button" className="bk-cta" onClick={() => void startPix()}>Gerar novo Pix</button>
+              </>
+            ) : !pix ? (
+              <p className="bk-sub">Gerando o Pix…</p>
+            ) : (
+              <>
+                <div className="bk-pix">
+                  <Image className="bk-qr" src={pix.qrCode} alt="QR Code do Pix" width={220} height={220} unoptimized />
+                  <code>{pix.brCode}</code>
+                  <button type="button" className="bk-ghost" onClick={copyPix}>
+                    {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar código</>}
+                  </button>
+                </div>
+                <p className="bk-demo">Aguardando o pagamento… esta tela confirma sozinha.</p>
+                {pix.devMode ? (
+                  <>
+                    <p className="bk-demo">Modo de teste: nenhum valor é cobrado de verdade.</p>
+                    <button type="button" className="bk-cta" disabled={simulating} onClick={simulatePayment}>
+                      {simulating ? "Simulando…" : "Simular pagamento (teste)"}
+                    </button>
+                  </>
+                ) : null}
+              </>
+            )}
           </section>
         )}
 
@@ -283,7 +363,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
               <div><dt>Cliente</dt><dd>{name.trim()}</dd></div>
               <div><dt>Valor</dt><dd>{formatBRL(service.price)}</dd></div>
             </dl>
-            <p className="bk-demo">Demonstração: o agendamento ainda não é salvo.</p>
+            <p className="bk-demo">Demonstração: o agendamento ainda não é salvo no sistema.</p>
           </section>
         )}
       </div>

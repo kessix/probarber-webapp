@@ -84,6 +84,15 @@ h2 em { color: var(--gold); font-style: italic; }
 .hero h1 span { color: var(--gold); font-style: italic; }
 .hero p.lead { color: var(--muted); font-size: 1.1rem; max-width: 500px; margin-bottom: 38px; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 44px; }
+.download-box { scroll-margin-top: 110px; margin-bottom: 22px; padding: 22px 24px; max-width: 520px; border: 1px solid var(--gold); border-radius: var(--radius); background: linear-gradient(160deg, rgba(212,162,76,.14), rgba(212,162,76,.03)); box-shadow: 0 0 60px rgba(212,162,76,.08); }
+.download-title { font-family: var(--serif); font-size: 1.25rem; line-height: 1.3; margin-bottom: 16px; }
+.download-note { color: var(--muted); font-size: .85rem; margin-top: 14px; }
+.store-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.store-btn { display: inline-flex; align-items: center; gap: 12px; padding: 11px 20px; border-radius: 12px; background: var(--fg); color: #0b0a09; transition: transform .2s, box-shadow .2s; }
+.store-btn:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(244,236,223,.2); }
+.store-btn span { display: flex; flex-direction: column; line-height: 1.15; }
+.store-btn small { font-size: .68rem; opacity: .7; }
+.store-btn strong { font-size: 1.02rem; font-weight: 600; }
 .rating { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding-top: 28px; border-top: 1px solid var(--border); max-width: 500px; }
 .avatars { display: flex; }
 .avatar { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--bg); margin-left: -12px; display: grid; place-items: center; font-weight: 600; font-size: .85rem; color: #fff; }

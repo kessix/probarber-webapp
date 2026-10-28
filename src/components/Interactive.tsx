@@ -49,7 +49,7 @@ export function NavBar() {
           <a href="#precos">Preço</a>
           <a href="#duvidas">Dúvidas</a>
         </nav>
-        <a href="#precos" id="nav-cta" className="btn btn-primary nav-cta">Teste grátis</a>
+        <a href="#baixar" id="nav-cta" className="btn btn-primary nav-cta">Baixar o app</a>
       </div>
     </header>
   );
