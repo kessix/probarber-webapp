@@ -49,6 +49,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
   const [pixError, setPixError] = useState<string | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [appointmentId, setAppointmentId] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
   // Horários ocupados do dia selecionado, vindos do banco.
   const [taken, setTaken] = useState<{ day: string; at: Set<number> } | null>(null);
@@ -119,8 +120,9 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
     return () => clearInterval(timer);
   }, [step, pix]);
 
-  async function startPix() {
-    if (!service) return;
+  async function startPix(forId?: string) {
+    const target = forId ?? appointmentId;
+    if (!target) return;
     setPix(null);
     setPixError(null);
     setStep("pix");
@@ -128,7 +130,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
       const res = await fetch("/api/pix", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: shop.slug, serviceId: service.id }),
+        body: JSON.stringify({ appointmentId: target }),
       });
       const data = (await res.json()) as Partial<Pix> & { error?: string; qrCode?: string };
       if (!res.ok || !data.id || !data.brCode || !data.qrCode || !data.expiresAt) {
@@ -161,13 +163,13 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
     if (previous) setStep(previous);
   }
 
-  /** Grava o agendamento no banco. O preço vem do serviço, não do navegador. */
-  async function book(payOnline: boolean) {
-    if (!service || !selectedDay || !time) return false;
+  /** Grava o agendamento no banco e devolve o id dele. O preço vem do serviço, não do navegador. */
+  async function book(payOnline: boolean): Promise<string | null> {
+    if (!service || !selectedDay || !time) return null;
     setSaving(true);
     setBookingError(null);
     const startsAt = new Date(Date.parse(`${selectedDay}T${time}:00${BR_OFFSET}`)).toISOString();
-    const { error } = await supabase.rpc("create_appointment", {
+    const { data, error } = await supabase.rpc("create_appointment", {
       p_slug: shop.slug,
       p_service_id: service.id,
       p_starts_at: startsAt,
@@ -176,9 +178,13 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
       p_pay_online: payOnline,
     });
     setSaving(false);
-    if (!error) return true;
+    if (!error && typeof data === "string") {
+      setAppointmentId(data);
+      return data;
+    }
 
-    if (error.message.includes("horario_indisponivel") || error.message.includes("horario_no_passado")) {
+    const message = error?.message ?? "";
+    if (message.includes("horario_indisponivel") || message.includes("horario_no_passado")) {
       setBookingError("Esse horário não está mais disponível. Escolha outro.");
       setTime(null);
       setReloadTaken((n) => n + 1);
@@ -186,7 +192,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
     } else {
       setBookingError("Não foi possível agendar. Tente de novo.");
     }
-    return false;
+    return null;
   }
 
   async function afterDados() {
@@ -195,13 +201,15 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
       return;
     }
     const online = shop.mode === "pagamento_obrigatorio";
-    if (!(await book(online))) return;
-    if (online) await startPix();
+    const id = await book(online);
+    if (!id) return;
+    if (online) await startPix(id);
     else setStep("ok");
   }
 
   async function payWithPix() {
-    if (await book(true)) await startPix();
+    const id = await book(true);
+    if (id) await startPix(id);
   }
 
   async function payAtShop() {
