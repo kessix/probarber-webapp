@@ -9,33 +9,57 @@ import { supabase } from "@/lib/supabase";
  */
 export type BookingMode = "comum" | "pagamento_obrigatorio" | "pagamento_opcional";
 
-export type Service = { id: string; name: string; price: number; minutes: number };
+export type Service = {
+  id: string;
+  name: string;
+  /** Preço padrão, em reais. */
+  price: number;
+  minutes: number;
+  photoUrl: string | null;
+  /** Preço de dias específicos da semana (0 = domingo), em reais. Falta = vale o padrão. */
+  dayPrices: Partial<Record<number, number>>;
+};
 
 export type Barbershop = {
   /** Vai na URL pública: probarberapp.com.br/{slug} */
   slug: string;
   name: string;
+  logoUrl: string | null;
+  phone: string | null;
+  address: string | null;
   instagram: string | null;
+  facebook: string | null;
+  googleReviewUrl: string | null;
   /** Cor da marca usada nos destaques da página. */
   color: string;
   mode: BookingMode;
+  /** Quantos dias à frente o cliente pode agendar, contando hoje (1 a 14). */
+  bookingWindowDays: number;
   services: Service[];
-  /** Horário de funcionamento, em horas (9 = 09:00). */
-  hours: { from: number; to: number };
-  /** Dias fechados (0 = domingo). */
-  closedWeekdays: number[];
 };
 
 type Row = {
   slug: string;
   name: string;
+  logo_url: string | null;
+  phone: string | null;
+  address: string | null;
   instagram: string | null;
+  facebook: string | null;
+  google_review_url: string | null;
   brand_color: string;
   booking_mode: BookingMode;
-  opening_hour: number;
-  closing_hour: number;
-  closed_weekdays: number[];
-  services: { id: string; name: string; price_cents: number; duration_minutes: number; active: boolean }[];
+  booking_window_days: number;
+  services: {
+    id: string;
+    name: string;
+    price_cents: number;
+    duration_minutes: number;
+    active: boolean;
+    photo_url: string | null;
+    sort_order: number;
+    service_day_prices: { weekday: number; price_cents: number }[];
+  }[];
 };
 
 // Mesma regra de endereço do banco: evita consultar com lixo vindo da URL.
@@ -52,7 +76,8 @@ export const getBarbershop = cache(async (slug: string): Promise<Barbershop | nu
   const { data, error } = await supabase
     .from("barbershops")
     .select(
-      "slug, name, instagram, brand_color, booking_mode, opening_hour, closing_hour, closed_weekdays, services(id, name, price_cents, duration_minutes, active)",
+      "slug, name, logo_url, phone, address, instagram, facebook, google_review_url, brand_color, booking_mode, booking_window_days, " +
+        "services(id, name, price_cents, duration_minutes, active, photo_url, sort_order, service_day_prices(weekday, price_cents))",
     )
     .eq("slug", slug)
     .maybeSingle<Row>();
@@ -62,13 +87,38 @@ export const getBarbershop = cache(async (slug: string): Promise<Barbershop | nu
   return {
     slug: data.slug,
     name: data.name,
+    logoUrl: data.logo_url,
+    phone: data.phone,
+    address: data.address,
     instagram: data.instagram,
+    facebook: data.facebook,
+    googleReviewUrl: data.google_review_url,
     color: data.brand_color,
     mode: data.booking_mode,
-    hours: { from: data.opening_hour, to: data.closing_hour },
-    closedWeekdays: data.closed_weekdays,
+    bookingWindowDays: data.booking_window_days,
     services: data.services
       .filter((s) => s.active)
-      .map((s) => ({ id: s.id, name: s.name, price: s.price_cents / 100, minutes: s.duration_minutes })),
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, "pt-BR"))
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        price: s.price_cents / 100,
+        minutes: s.duration_minutes,
+        photoUrl: s.photo_url,
+        dayPrices: Object.fromEntries(s.service_day_prices.map((p) => [p.weekday, p.price_cents / 100])),
+      })),
   };
 });
+
+/** Preço do serviço no dia da semana (0 = domingo): o do dia, se houver, senão o padrão. */
+export const priceOn = (service: Service, weekday: number) => service.dayPrices[weekday] ?? service.price;
+
+/** Endereço de rede social digitado pelo barbeiro ("@user", "facebook.com/x" ou link) vira um link. */
+export function socialUrl(kind: "instagram" | "facebook" | "web", value: string | null) {
+  const text = value?.trim();
+  if (!text) return null;
+  if (/^https?:\/\//i.test(text)) return text;
+  if (kind === "instagram") return `https://instagram.com/${text.replace(/^@/, "")}`;
+  if (kind === "facebook") return `https://${text.replace(/^\/+/, "")}`;
+  return null; // link do Google precisa ser um endereço completo
+}
