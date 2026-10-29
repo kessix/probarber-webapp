@@ -6,16 +6,16 @@ const lexend = Lexend({ subsets: ["latin"], variable: "--font-lexend", display: 
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap", style: ["normal", "italic"] });
 
 export const metadata: Metadata = {
-  title: "ProBarber: Agenda e gestão para barbearias",
+  title: "ProBarber App: Agenda e gestão para barbearias",
   description:
-    "O ProBarber é o app ideal para sua barbearia. Agendamento online, gestão de equipe e controle financeiro em um só lugar.",
-  keywords: ["agenda para barbeiros", "app de barbearia", "agendamento online", "ProBarber", "gestão de barbearia"],
+    "O ProBarber App é o aplicativo para a sua barbearia: agenda online, link de agendamento próprio e pagamento por Pix ou na barbearia.",
+  keywords: ["agenda para barbeiros", "app de barbearia", "agendamento online", "ProBarber", "ProBarber App", "gestão de barbearia"],
   openGraph: {
-    title: "ProBarber: Agenda e gestão para barbearias",
-    description: "Agendamento online, gestão de equipe e controle financeiro em um só lugar.",
+    title: "ProBarber App: Agenda e gestão para barbearias",
+    description: "Agenda online, link de agendamento próprio e pagamento por Pix ou na barbearia.",
     type: "website",
     locale: "pt_BR",
-    siteName: "ProBarber",
+    siteName: "ProBarber App",
   },
 };
 

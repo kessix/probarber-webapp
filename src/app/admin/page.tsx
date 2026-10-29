@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Scissors } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Painel do barbeiro · ProBarber",
+  title: "Painel do barbeiro · ProBarber App",
   robots: { index: false },
 };
 

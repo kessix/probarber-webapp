@@ -7,6 +7,20 @@ import { STORE_LINKS } from "@/lib/stores";
 const YEAR = 2026;
 const PRICE = { whole: "40", cents: "00" };
 
+/** Planos à venda. Novos planos entram aqui e aparecem sozinhos na seção. */
+type Plan = { id: string; name: string; tagline: string; price: { whole: string; cents: string }; unit: string; trial: string; perks: string[] };
+const plans: Plan[] = [
+  {
+    id: "essencial",
+    name: "Essencial",
+    tagline: "Tudo para receber agendamentos e pagamentos na sua barbearia.",
+    price: PRICE,
+    unit: "por mês, por profissional cadastrado",
+    trial: "30 dias de teste grátis, sem compromisso",
+    perks: ["Agenda e link de agendamento próprio", "Pix ou pagamento na barbearia", "Catálogo de serviços com foto e preço por dia", "Confirmação por e-mail e cancelamento pelo cliente"],
+  },
+];
+
 const bubbles = [
   { n: "Lucas", t: "10:00", c: "#b97d27", x: "-6%", y: "10%", dx: "14px", dy: "-18px", dur: "9s", delay: "0s" },
   { n: "Rafa", t: "14:00", c: "#3f6b5a", x: "74%", y: "4%", dx: "-16px", dy: "14px", dur: "11s", delay: "-3s" },
@@ -44,7 +58,6 @@ const howItWorks: { i: LucideIcon; t: string; d: string }[] = [
 ];
 
 const facts = [
-  { n: "14", l: "dias de agenda aberta, no máximo" },
   { n: "3", l: "formas de cobrar: comum, Pix obrigatório ou opcional" },
   { n: "0", l: "contas para o seu cliente criar" },
   { n: "30", l: "dias de teste grátis" },
@@ -52,14 +65,19 @@ const facts = [
 
 const faq = [
   { q: "Como funciona o aplicativo ProBarber?", a: "O ProBarber reúne a agenda online, o link de agendamento da sua barbearia e o recebimento por Pix ou na barbearia em um só lugar. Equipe, estoque e financeiro estão a caminho." },
-  { q: "Como faço meu cadastro?", a: "O cadastro é feito somente pelo aplicativo ProBarber, disponível no Google Play e na App Store. Baixe o app, crie sua conta e comece o teste grátis." },
+  { q: "Como faço meu cadastro?", a: "O cadastro é feito somente pelo aplicativo ProBarber, disponível no Google Play e na App Store. Baixe o app, crie sua conta com um código enviado ao seu e-mail e comece o teste grátis." },
   { q: "Preciso pagar para usar o ProBarber?", a: `Você tem 30 dias de teste grátis, sem compromisso. Depois, o plano custa R$ ${PRICE.whole},${PRICE.cents} por mês por profissional cadastrado.` },
   { q: "Como funciona o pagamento dos clientes?", a: "Você escolhe: agendamento comum (sem pagamento no app), Pix obrigatório ou Pix opcional. No opcional, o cliente paga na hora ou na barbearia; quem paga no local fica como pendência e você dá baixa em Pix, dinheiro ou cartão." },
-  { q: "Quais são os benefícios do agendamento online?", a: "Menos faltas, agenda organizada e uma experiência moderna para seus clientes, com confirmação por e-mail e a opção de cancelar pelo próprio link." },
-  { q: "É seguro usar o ProBarber?", a: "Sim. Usamos criptografia e servidores seguros para proteger os dados dos seus clientes e o histórico de agendamentos." },
-  { q: "O sistema é fácil de usar?", a: "Foi pensado para ser simples desde o primeiro acesso: telas claras, atalhos inteligentes e suporte quando precisar." },
-  { q: "Posso personalizar com a marca da minha barbearia?", a: "Sim! Personalize o link de agendamento com o nome do seu negócio e divulgue no Instagram ou WhatsApp." },
-  { q: "O ProBarber tem suporte?", a: "Com certeza. Nosso suporte é humanizado e rápido, por chat ou WhatsApp." },
+  { q: "Meu cliente precisa baixar o app ou criar conta?", a: "Não. O cliente agenda pelo seu link, direto no navegador, informando só nome e e-mail. Ele pode acompanhar e cancelar o horário em \"Meus agendamentos\", sem login." },
+  { q: "Até quantos dias posso deixar a agenda aberta?", a: "Você decide de 1 a 14 dias à frente, contando hoje. O cliente só vê os dias dentro desse prazo que ainda têm horário livre." },
+  { q: "Posso definir meus horários, almoço e folgas?", a: "Sim. Você escolhe os dias da semana, o início, o almoço e o fim do atendimento, o intervalo entre os horários (de 10 a 60 minutos) e pode fechar um dia inteiro ou só alguns horários, como uma tarde de folga." },
+  { q: "O cliente pode cancelar o agendamento?", a: "Pode, pelo próprio link e até 2 horas antes do horário. O horário volta a ficar livre na hora. Se ele já tiver pago por Pix, o reembolso é combinado com a barbearia." },
+  { q: "Posso cobrar preços diferentes em dias diferentes?", a: "Sim. Cada serviço tem foto, duração e preço padrão, e você pode definir um preço diferente para dias específicos da semana." },
+  { q: "Posso bloquear um cliente?", a: "Sim. Com um toque no agendamento você bloqueia o cliente, que deixa de conseguir agendar pelo seu link. Você pode desbloquear quando quiser." },
+  { q: "Posso personalizar com a marca da minha barbearia?", a: "Sim! Escolha o endereço do seu link e coloque sua logo, telefone, endereço, Instagram, Facebook e o link das suas avaliações no Google. Divulgue no Instagram ou no WhatsApp." },
+  { q: "Funciona para barbearias com mais de um profissional?", a: "O plano é cobrado por profissional cadastrado. Hoje o app cuida da agenda do dono da barbearia; a gestão de equipe, com uma agenda para cada barbeiro, está a caminho." },
+  { q: "É seguro usar o ProBarber?", a: "Sim. A conexão é criptografada e os dados dos seus clientes só podem ser vistos por você. Quem agenda enxerga apenas os próprios agendamentos." },
+  { q: "O ProBarber tem suporte?", a: "Sim, com atendimento humanizado. A central de suporte dentro do app chega em breve." },
   { q: "Preciso de internet para usar?", a: "Sim. A conexão mantém tudo sincronizado e disponível de qualquer lugar." },
 ];
 
@@ -119,6 +137,24 @@ export default function Home() {
         </section>
         <div className="pole" aria-hidden="true" />
 
+        <DarkZone id="como-funciona" className="section features">
+          <div className="container">
+            <Reveal><p className="eyebrow">Como funciona</p><h2>Do download ao primeiro <em>agendamento</em></h2></Reveal>
+            <div className="feature-grid">
+              {howItWorks.map((f, i) => (
+                <Reveal key={f.t} delay={i * 100}>
+                  <article className="feature"><div className="fi"><f.i size={24} strokeWidth={1.6} /></div><h4>{f.t}</h4><p>{f.d}</p></article>
+                </Reveal>
+              ))}
+            </div>
+            <div className="metrics">
+              {facts.map((f) => (
+                <div key={f.l}><h4>{f.n}</h4><p>{f.l}</p></div>
+              ))}
+            </div>
+          </div>
+        </DarkZone>
+
         <section id="recursos" className="section container">
           <Reveal><p className="eyebrow">Principais recursos</p><h2>Agenda com pagamento <em>flexível</em>: Pix ou na barbearia</h2></Reveal>
           <div className="steps">
@@ -153,40 +189,27 @@ export default function Home() {
           </div>
         </DarkZone>
 
-        <DarkZone id="como-funciona" className="section features">
-          <div className="container">
-            <Reveal><p className="eyebrow">Como funciona</p><h2>Do download ao primeiro <em>agendamento</em></h2></Reveal>
-            <div className="feature-grid">
-              {howItWorks.map((f, i) => (
-                <Reveal key={f.t} delay={i * 100}>
-                  <article className="feature"><div className="fi"><f.i size={24} strokeWidth={1.6} /></div><h4>{f.t}</h4><p>{f.d}</p></article>
-                </Reveal>
-              ))}
-            </div>
-            <div className="metrics">
-              {facts.map((f) => (
-                <div key={f.l}><h4>{f.n}</h4><p>{f.l}</p></div>
-              ))}
-            </div>
+        <section id="planos" className="section container">
+          <Reveal><p className="eyebrow">Planos</p><h2>Escolha o plano para a <em>sua barbearia</em></h2></Reveal>
+          <div className="plan-grid">
+            {plans.map((plan, i) => (
+              <Reveal key={plan.id} delay={i * 100}>
+                <article className="plan">
+                  <header>
+                    <h3>{plan.name}</h3>
+                    <p>{plan.tagline}</p>
+                  </header>
+                  <div className="plan-price">
+                    <div className="price"><sup>R$</sup>{plan.price.whole},{plan.price.cents}</div>
+                    <small>{plan.unit}</small>
+                  </div>
+                  <p className="plan-trial"><span className="hl">{plan.trial}</span></p>
+                  <ul className="perks">{plan.perks.map((perk) => <li key={perk}>{perk}</li>)}</ul>
+                  <a id={`plan-cta-${plan.id}`} href="#baixar" className="btn btn-primary">Baixar o app e começar →</a>
+                </article>
+              </Reveal>
+            ))}
           </div>
-        </DarkZone>
-
-        <section id="precos" className="section container">
-          <Reveal>
-            <div className="pricing-box">
-              <div className="pricing-left">
-                <h2>Quais são os planos?</h2>
-                <p>Hoje oferecemos <span className="hl">30 dias</span> de teste sem compromisso.</p>
-                <ul className="perks"><li>Agenda e link de agendamento próprio</li><li>Pix ou pagamento na barbearia</li><li>Cadastro pelo app, sem burocracia</li></ul>
-              </div>
-              <div className="pricing-right">
-                <p>Depois do teste, se você gostar, o valor é apenas</p>
-                <div className="price"><sup>R$</sup>{PRICE.whole},{PRICE.cents}<span>/mês</span></div>
-                <small>por profissional cadastrado.</small>
-                <a id="pricing-cta" href="#baixar" className="btn btn-primary" style={{ marginTop: 28, alignSelf: "flex-start" }}>Baixar o app →</a>
-              </div>
-            </div>
-          </Reveal>
         </section>
 
         <section id="duvidas" className="section container" style={{ paddingTop: 0 }}>
@@ -212,8 +235,8 @@ export default function Home() {
             </div>
           </div>
           <div className="footer-bottom">
-            <span>ProBarber · Kessix Tech</span>
-            <span>© {YEAR} ProBarber. Todos os direitos reservados.</span>
+            <span>Desenvolvido com compromisso por <a href="https://kessix.github.io/#" target="_blank" rel="noopener noreferrer">Kessix Tech</a></span>
+            <span>© {YEAR} ProBarber App. Todos os direitos reservados.</span>
           </div>
         </div>
       </footer>

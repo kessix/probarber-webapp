@@ -44,9 +44,9 @@ export function NavBar() {
       <div className="container nav-inner">
         <a href="#" className="logo"><span className="logo-mark"><Scissors size={18} /></span><span>ProBarber<span className="logo-app">App</span></span></a>
         <nav className="nav-links" aria-label="Principal">
-          <a href="#recursos">Recursos</a>
           <a href="#como-funciona">Como funciona</a>
-          <a href="#precos">Preço</a>
+          <a href="#recursos">Recursos</a>
+          <a href="#planos">Planos</a>
           <a href="#duvidas">Dúvidas</a>
         </nav>
         <a href="#baixar" id="nav-cta" className="btn btn-primary nav-cta">Baixar o app</a>
