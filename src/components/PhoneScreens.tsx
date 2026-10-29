@@ -1,4 +1,4 @@
-import { Camera, Check, CreditCard, Link2, MessageCircle, QrCode, Share2 } from "lucide-react";
+import { Banknote, Check, CreditCard, QrCode, Store } from "lucide-react";
 import type { ReactNode } from "react";
 
 function Phone({ children }: { children: ReactNode }) {
@@ -75,7 +75,7 @@ function PaymentScreen() {
       <h6>Pagamento</h6>
       <p className="ms-sub">Corte + barba · Sex 10:00</p>
       <div className="ms-total"><small>Total</small><strong>R$ 50,00</strong></div>
-      <div className="ms-tabs"><span className="on"><QrCode size={13} /> Pix</span><span><CreditCard size={13} /> Cartão</span></div>
+      <div className="ms-tabs"><span className="on"><QrCode size={13} /> Pix agora</span><span><Store size={13} /> Na barbearia</span></div>
       <QrMock />
       <p className="ms-hint">Escaneie ou copie o código Pix</p>
       <div className="ms-btn">Copiar código</div>
@@ -83,51 +83,51 @@ function PaymentScreen() {
   );
 }
 
-/** 4. Integre seu link com as redes sociais */
-function SocialScreen() {
+/** 3. Cliente escolhe pagar na barbearia: vira pendência e o barbeiro dá baixa */
+function ReceiveScreen() {
   return (
     <Phone>
-      <div className="ms-profile"><span className="ms-logo">PB</span><h6>Barbearia Dois Irmãos</h6><p className="ms-sub">@doisirmaosbarber</p></div>
-      <div className="ms-bio"><Link2 size={12} /> probarberapp.com.br/doisirmaos</div>
-      <div className="ms-btn">Agendar horário</div>
-      <div className="ms-share-block">
-        <p className="ms-hint">Compartilhe seu link</p>
-        <div className="ms-share">
-          <span><Camera size={16} /></span>
-          <span><MessageCircle size={16} /></span>
-          <span><Share2 size={16} /></span>
-        </div>
+      <h6>Pendências</h6>
+      <p className="ms-sub">Pagamentos a receber na barbearia</p>
+      <div className="ms-row">
+        <strong>14:00</strong>
+        <span>Rafa<small>Corte · R$ 45</small></span>
       </div>
+      <p className="ms-hint">Receber como</p>
+      <div className="ms-tabs"><span className="on"><QrCode size={12} /> Pix</span><span><Banknote size={12} /> Dinheiro</span><span><CreditCard size={12} /> Cartão</span></div>
+      <div className="ms-row ok">
+        <strong>10:00</strong>
+        <span>Lucas<small>Pago · Cartão</small></span>
+        <Check size={13} />
+      </div>
+      <div className="ms-btn">Dar baixa</div>
     </Phone>
   );
 }
 
-/** 3. Personalize seu link de agendamento */
-function LinkScreen() {
+/** 4. O barbeiro escolhe como o cliente paga */
+function ModesScreen() {
+  const modes = [
+    ["Agendamento comum", "Sem pagamento no app", false],
+    ["Pix obrigatório", "Horário fecha ao pagar", false],
+    ["Pix ou na barbearia", "O cliente escolhe", true],
+  ] as const;
   return (
     <Phone>
-      <h6>Meu link</h6>
-      <p className="ms-sub">Personalize sua página</p>
-      <div className="ms-field">
-        <label className="ms-label">Endereço</label>
-        <div className="ms-input"><small>probarberapp.com.br/</small>doisirmaos</div>
-      </div>
-      <div className="ms-field">
-        <label className="ms-label">Nome</label>
-        <div className="ms-input">Barbearia Dois Irmãos</div>
-      </div>
-      <div className="ms-field">
-        <label className="ms-label">Cor da marca</label>
-        <div className="ms-colors">
-          {["#d4a24c", "#b3262e", "#2f6f8f", "#3f6b5a", "#6a4c93"].map((c, i) => <span key={c} className={i === 0 ? "on" : ""} style={{ background: c }} />)}
+      <h6>Como o cliente paga</h6>
+      <p className="ms-sub">Você decide, a qualquer momento</p>
+      {modes.map(([t, d, on]) => (
+        <div key={t} className={`ms-opt ${on ? "on" : ""}`}>
+          <i />
+          <span>{t}<small>{d}</small></span>
         </div>
-      </div>
-      <div className="ms-btn">Salvar</div>
+      ))}
+      <p className="ms-hint">Pagamento online somente por Pix</p>
     </Phone>
   );
 }
 
-const screens = [AgendaScreen, PaymentScreen, LinkScreen, SocialScreen];
+const screens = [AgendaScreen, PaymentScreen, ReceiveScreen, ModesScreen];
 
 export function StepScreen({ index }: { index: number }) {
   const Screen = screens[index];

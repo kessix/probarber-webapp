@@ -42,10 +42,10 @@ export function NavBar() {
   return (
     <header className={`nav ${scrolled ? "scrolled" : ""}`}>
       <div className="container nav-inner">
-        <a href="#" className="logo"><span className="logo-mark"><Scissors size={18} /></span>ProBarber</a>
+        <a href="#" className="logo"><span className="logo-mark"><Scissors size={18} /></span><span>ProBarber<span className="logo-app">App</span></span></a>
         <nav className="nav-links" aria-label="Principal">
           <a href="#recursos">Recursos</a>
-          <a href="#depoimentos">Depoimentos</a>
+          <a href="#como-funciona">Como funciona</a>
           <a href="#precos">Preço</a>
           <a href="#duvidas">Dúvidas</a>
         </nav>

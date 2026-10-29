@@ -1,5 +1,5 @@
-import { Boxes, CalendarCheck, CalendarDays, CreditCard, Link2, Scissors, Share2, Star, UsersRound, Wallet, BellRing, Headset, type LucideIcon } from "lucide-react";
-import { DarkZone, Faq, Metrics, NavBar, Reveal } from "@/components/Interactive";
+import { BellRing, Boxes, CalendarCheck, CalendarClock, CalendarDays, CreditCard, Download, Headset, Link2, Mail, Scissors, SlidersHorizontal, Store, UserX, UsersRound, Wallet, type LucideIcon } from "lucide-react";
+import { DarkZone, Faq, NavBar, Reveal } from "@/components/Interactive";
 import { StepScreen } from "@/components/PhoneScreens";
 import { StoreButtons } from "@/components/StoreButtons";
 import { STORE_LINKS } from "@/lib/stores";
@@ -15,41 +15,47 @@ const bubbles = [
 ];
 
 const steps: { icon: LucideIcon; title: string[] }[] = [
-  { icon: CalendarDays, title: ["Acompanhe", "seus agendamentos"] },
-  { icon: CreditCard, title: ["Cliente paga", "direto pelo app com Pix"] },
-  { icon: Link2, title: ["Personalize seu link", "de agendamento"] },
-  { icon: Share2, title: ["Integre seu link com", "suas redes sociais"] },
+  { icon: CalendarDays, title: ["Agenda online que", "seus clientes usam sozinhos"] },
+  { icon: CreditCard, title: ["Cliente paga na hora", "com Pix"] },
+  { icon: Store, title: ["Ou paga na barbearia,", "com baixa em Pix, dinheiro ou cartão"] },
+  { icon: SlidersHorizontal, title: ["Você escolhe", "como cobrar"] },
 ];
 
-const features: { i: LucideIcon; t: string; d: string }[] = [
-  { i: CalendarCheck, t: "Agendamento online", d: "Seus clientes marcam horário a qualquer hora, em segundos. Menos mensagens no WhatsApp, mais tempo na cadeira." },
-  { i: Boxes, t: "Controle de estoque", d: "Registre entradas e saídas de pomadas, lâminas e produtos, e receba alertas quando algo estiver acabando." },
-  { i: UsersRound, t: "Gestão de equipe", d: "Cada barbeiro com sua agenda, comissões e histórico de atendimentos, tudo organizado em um só lugar." },
-  { i: Headset, t: "Suporte humanizado", d: "Fale com gente de verdade por chat ou WhatsApp. Sem robôs, sem filas e sem enrolação." },
-  { i: Wallet, t: "Controle financeiro", d: "Acompanhe entradas, saídas e faturamento por dia, serviço ou profissional, com pagamentos via Pix e relatórios claros." },
-  { i: BellRing, t: "Automação de lembretes", d: "Confirmações e lembretes automáticos que reduzem faltas e mantêm sua agenda cheia." },
+type Feature = { i: LucideIcon; t: string; d: string; soon?: boolean };
+const features: Feature[] = [
+  { i: Link2, t: "Link de agendamento próprio", d: "Seu endereço, sua logo e seus contatos: Instagram, Facebook e avaliações do Google. O cliente agenda em segundos, sem criar conta." },
+  { i: CalendarClock, t: "Horários sob medida", d: "Defina dias, início, almoço e fim, o intervalo entre horários e até quantos dias a agenda fica aberta (até 14). Feche um dia inteiro ou só algumas horas." },
+  { i: Scissors, t: "Catálogo de serviços", d: "Serviços com foto, duração e preço, inclusive preço diferente por dia da semana. Escolha quais você atende." },
+  { i: Wallet, t: "Pix ou pagar na barbearia", d: "Pagamento obrigatório, opcional ou nenhum. Quem paga no local vira pendência e você dá baixa em Pix, dinheiro ou cartão." },
+  { i: CalendarCheck, t: "Meus agendamentos", d: "O cliente vê e cancela o próprio horário (até 2 horas antes) sem login, e o link lembra dos dados dele na próxima vez." },
+  { i: Mail, t: "Confirmação por e-mail", d: "O cliente recebe a confirmação do horário com endereço e valor, e só se aceitar receber." },
+  { i: UserX, t: "Controle de clientes", d: "Bloqueie quem falta ou atrapalha, veja os cancelados e acompanhe as pendências de pagamento direto na agenda." },
+  { i: BellRing, t: "Lembretes automáticos", d: "Lembretes antes do horário para reduzir faltas e manter sua agenda cheia.", soon: true },
+  { i: UsersRound, t: "Gestão de equipe", d: "Cada barbeiro com sua agenda, comissões e histórico de atendimentos.", soon: true },
+  { i: Boxes, t: "Controle de estoque", d: "Entradas e saídas de pomadas, lâminas e produtos, com alerta quando algo estiver acabando.", soon: true },
+  { i: Wallet, t: "Controle financeiro", d: "Entradas, saídas e faturamento por dia, serviço ou profissional, com relatórios claros.", soon: true },
+  { i: Headset, t: "Suporte humanizado", d: "Fale com gente de verdade por chat ou WhatsApp, sem robôs e sem filas.", soon: true },
 ];
 
-const Stars = () => (
-  <span className="stars" aria-label="5 estrelas">
-    {[0, 1, 2, 3, 4].map((n) => <Star key={n} size={14} fill="currentColor" />)}
-  </span>
-);
+const howItWorks: { i: LucideIcon; t: string; d: string }[] = [
+  { i: Download, t: "Baixe o app e crie sua conta", d: "O cadastro é feito pelo aplicativo, com um código enviado ao seu e-mail. Sem senha para decorar." },
+  { i: Link2, t: "Configure e divulgue seu link", d: "Escolha o endereço, ajuste horários e serviços e coloque o link na bio do Instagram ou no WhatsApp." },
+  { i: CalendarCheck, t: "O cliente agenda e paga", d: "Ele escolhe serviço, dia e horário e paga por Pix na hora ou na barbearia, como você configurou." },
+];
 
-const testimonials = [
-  { n: "João Pedro", s: "Barbearia Dois Irmãos", c: "#b97d27", q: "Antes eu anotava horário no papel e esquecia metade. Agora é tudo automático e meus clientes adoram a praticidade." },
-  { n: "Lucas Andrade", s: "Studio do Barba", c: "#3f6b5a", q: "Dobrei meus agendamentos depois que comecei a usar o app. E o suporte é nota 10." },
-  { n: "Matheus Lopes", s: "Barbearia Elite", c: "#6a4c93", q: "O controle financeiro me mostra exatamente quanto faturo no mês. Muito intuitivo." },
-  { n: "Anderson Silva", s: "Barber 013", c: "#a8442f", q: "Os lembretes automáticos reduziram minhas faltas em 70%. Cliente esquecer virou raridade." },
-  { n: "Felipe Rezende", s: "Barbearia Central", c: "#2f6f8f", q: "Tenho 3 profissionais e cada um tem sua agenda separada. Organizou a casa toda." },
-  { n: "Rafael Teixeira", s: "Barbearia Refúgio", c: "#8f6a2f", q: "Comecei no teste grátis e nunca mais saí. App leve, bonito e prático." },
+const facts = [
+  { n: "14", l: "dias de agenda aberta, no máximo" },
+  { n: "3", l: "formas de cobrar: comum, Pix obrigatório ou opcional" },
+  { n: "0", l: "contas para o seu cliente criar" },
+  { n: "30", l: "dias de teste grátis" },
 ];
 
 const faq = [
-  { q: "Como funciona o aplicativo ProBarber?", a: "O ProBarber reúne agendamentos, equipe, estoque e pagamentos em um só lugar, direto pelo celular ou computador." },
+  { q: "Como funciona o aplicativo ProBarber?", a: "O ProBarber reúne a agenda online, o link de agendamento da sua barbearia e o recebimento por Pix ou na barbearia em um só lugar. Equipe, estoque e financeiro estão a caminho." },
   { q: "Como faço meu cadastro?", a: "O cadastro é feito somente pelo aplicativo ProBarber, disponível no Google Play e na App Store. Baixe o app, crie sua conta e comece o teste grátis." },
   { q: "Preciso pagar para usar o ProBarber?", a: `Você tem 30 dias de teste grátis, sem compromisso. Depois, o plano custa R$ ${PRICE.whole},${PRICE.cents} por mês por profissional cadastrado.` },
-  { q: "Quais são os benefícios do agendamento online?", a: "Menos faltas, agenda organizada e uma experiência moderna para seus clientes, com confirmação automática e lembretes." },
+  { q: "Como funciona o pagamento dos clientes?", a: "Você escolhe: agendamento comum (sem pagamento no app), Pix obrigatório ou Pix opcional. No opcional, o cliente paga na hora ou na barbearia; quem paga no local fica como pendência e você dá baixa em Pix, dinheiro ou cartão." },
+  { q: "Quais são os benefícios do agendamento online?", a: "Menos faltas, agenda organizada e uma experiência moderna para seus clientes, com confirmação por e-mail e a opção de cancelar pelo próprio link." },
   { q: "É seguro usar o ProBarber?", a: "Sim. Usamos criptografia e servidores seguros para proteger os dados dos seus clientes e o histórico de agendamentos." },
   { q: "O sistema é fácil de usar?", a: "Foi pensado para ser simples desde o primeiro acesso: telas claras, atalhos inteligentes e suporte quando precisar." },
   { q: "Posso personalizar com a marca da minha barbearia?", a: "Sim! Personalize o link de agendamento com o nome do seu negócio e divulgue no Instagram ou WhatsApp." },
@@ -57,11 +63,8 @@ const faq = [
   { q: "Preciso de internet para usar?", a: "Sim. A conexão mantém tudo sincronizado e disponível de qualquer lugar." },
 ];
 
-const initials = ["JP", "LA", "ML", "AS"];
-const avatarColors = ["#b97d27", "#3f6b5a", "#6a4c93", "#a8442f"];
 
 export default function Home() {
-  const loop = [...testimonials, ...testimonials];
   return (
     <>
       <NavBar />
@@ -69,7 +72,7 @@ export default function Home() {
         <section className="hero">
           <div className="container hero-grid">
             <div>
-              <p className="eyebrow">Gestão para barbearias · Desde 2025</p>
+              <p className="eyebrow">Gestão para barbearias</p>
               <h1>Simplifique a forma como você <span>administra sua barbearia</span></h1>
               <p className="lead">Não importa o tamanho do seu negócio, o ProBarber foi feito para aumentar sua produtividade e liberar você para o que importa: crescer e prosperar.</p>
               <div id="baixar" className="download-box">
@@ -80,15 +83,11 @@ export default function Home() {
               <div className="hero-actions">
                 <a id="hero-more" href="#recursos" className="btn btn-ghost">Ver recursos</a>
               </div>
-              <div className="rating">
-                <div className="avatars" aria-hidden="true">
-                  {initials.map((s, i) => <span key={s} className="avatar" style={{ background: avatarColors[i] }}>{s}</span>)}
-                </div>
-                <div>
-                  <strong>4.8 <Stars /></strong>
-                  <small>+800 avaliações · 60k+ downloads</small>
-                </div>
-              </div>
+              <ul className="hero-points">
+                <li>30 dias de teste grátis</li>
+                <li>Pix ou pagamento na barbearia</li>
+                <li>Cliente agenda sem criar conta</li>
+              </ul>
             </div>
 
             <div className="hero-art" aria-hidden="true">
@@ -121,7 +120,7 @@ export default function Home() {
         <div className="pole" aria-hidden="true" />
 
         <section id="recursos" className="section container">
-          <Reveal><p className="eyebrow">Recursos</p><h2>Todas as ferramentas para o seu negócio <em>na palma da mão</em></h2></Reveal>
+          <Reveal><p className="eyebrow">Principais recursos</p><h2>Agenda com pagamento <em>flexível</em>: Pix ou na barbearia</h2></Reveal>
           <div className="steps">
             {steps.map((s, i) => (
               <Reveal key={i} delay={i * 120}>
@@ -147,35 +146,29 @@ export default function Home() {
             <div className="feature-grid">
               {features.map((f, i) => (
                 <Reveal key={f.t} delay={(i % 3) * 100}>
-                  <article className="feature"><div className="fi"><f.i size={24} strokeWidth={1.6} /></div><h4>{f.t}</h4><p>{f.d}</p></article>
+                  <article className={`feature ${f.soon ? "is-soon" : ""}`}>{f.soon ? <span className="soon">Em breve</span> : null}<div className="fi"><f.i size={24} strokeWidth={1.6} /></div><h4>{f.t}</h4><p>{f.d}</p></article>
                 </Reveal>
               ))}
             </div>
           </div>
         </DarkZone>
 
-        <DarkZone id="depoimentos" className="section testimonials">
-          <div className="container"><Reveal><p className="eyebrow">Depoimentos</p><h2>Veja o que nossos <em>parceiros</em> falam sobre nós</h2></Reveal></div>
-          <div className="slider">
-            <div className="track">
-              {loop.map((t, i) => (
-                <figure key={i} className="t-item">
-                  <div className="t-stars"><Stars /> <span>5.0</span></div>
-                  <p>{t.q}</p>
-                  <figcaption className="author">
-                    <span className="avatar" style={{ background: t.c }}>{t.n[0]}</span>
-                    <div><strong>{t.n}</strong><small>{t.s}</small></div>
-                  </figcaption>
-                </figure>
+        <DarkZone id="como-funciona" className="section features">
+          <div className="container">
+            <Reveal><p className="eyebrow">Como funciona</p><h2>Do download ao primeiro <em>agendamento</em></h2></Reveal>
+            <div className="feature-grid">
+              {howItWorks.map((f, i) => (
+                <Reveal key={f.t} delay={i * 100}>
+                  <article className="feature"><div className="fi"><f.i size={24} strokeWidth={1.6} /></div><h4>{f.t}</h4><p>{f.d}</p></article>
+                </Reveal>
+              ))}
+            </div>
+            <div className="metrics">
+              {facts.map((f) => (
+                <div key={f.l}><h4>{f.n}</h4><p>{f.l}</p></div>
               ))}
             </div>
           </div>
-          <Metrics items={[
-            { base: 120000, perDay: 400, label: "Agendamentos realizados" },
-            { base: 900, perDay: 2, label: "Barbearias automatizadas" },
-            { base: 14000, perDay: 20, label: "Horas poupadas" },
-            { base: 480000, perDay: 1200, label: "Lembretes enviados" },
-          ]} />
         </DarkZone>
 
         <section id="precos" className="section container">
@@ -184,7 +177,7 @@ export default function Home() {
               <div className="pricing-left">
                 <h2>Quais são os planos?</h2>
                 <p>Hoje oferecemos <span className="hl">30 dias</span> de teste sem compromisso.</p>
-                <ul className="perks"><li>Agenda e link de agendamento</li><li>Equipe, estoque e financeiro</li><li>Suporte humanizado</li></ul>
+                <ul className="perks"><li>Agenda e link de agendamento próprio</li><li>Pix ou pagamento na barbearia</li><li>Cadastro pelo app, sem burocracia</li></ul>
               </div>
               <div className="pricing-right">
                 <p>Depois do teste, se você gostar, o valor é apenas</p>
@@ -207,7 +200,7 @@ export default function Home() {
         <div className="container">
           <div className="footer-top">
             <div>
-              <div className="logo"><span className="logo-mark"><Scissors size={18} /></span>ProBarber</div>
+              <div className="logo"><span className="logo-mark"><Scissors size={18} /></span><span>ProBarber<span className="logo-app">App</span></span></div>
               <p>Transforme a experiência dos seus clientes com nosso sistema de agendamento e gestão inteligente.</p>
             </div>
             <div>
