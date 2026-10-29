@@ -12,6 +12,7 @@ type Row = {
   price_cents: number;
   status: string;
   payment_status: string;
+  payment_online: boolean;
   client_name: string;
   client_email: string | null;
   confirmation_sent_at: string | null;
@@ -24,8 +25,12 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://probarberapp.com.br";
 const when = (iso: string) =>
   new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "full", timeStyle: "short" }).format(new Date(iso));
 
-const paymentText = (status: string) =>
-  status === "pago" ? "Pagamento confirmado." : status === "pendente" ? "Pagamento pendente: você paga na barbearia ou conclui o Pix." : "Você paga na barbearia, depois do atendimento.";
+const paymentText = (status: string, online: boolean) =>
+  status === "pago"
+    ? "Pagamento confirmado."
+    : status === "pendente" && online
+      ? "Pagamento pendente: conclua o Pix para garantir o horário."
+      : "Você paga na barbearia, depois do atendimento.";
 
 /**
  * Envia o e-mail de confirmação do agendamento. Só para quem aceitou notificações, só para o e-mail
@@ -39,7 +44,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const { data: row, error } = await db
     .from("appointments")
     .select(
-      "id, starts_at, service_name, price_cents, status, payment_status, client_name, client_email, confirmation_sent_at, clients(notifications, access_token), barbershops(slug, name, address, phone)",
+      "id, starts_at, service_name, price_cents, status, payment_status, payment_online, client_name, client_email, confirmation_sent_at, clients(notifications, access_token), barbershops(slug, name, address, phone)",
     )
     .eq("id", id)
     .maybeSingle<Row>();
@@ -70,7 +75,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     `<tr><td><strong>Valor</strong></td><td>${escapeHtml(formatBRL(row.price_cents / 100))}</td></tr>`,
     shop?.address ? `<tr><td><strong>Endereço</strong></td><td>${escapeHtml(shop.address)}</td></tr>` : "",
     `</table>`,
-    `<p>${escapeHtml(paymentText(row.payment_status))}</p>`,
+    `<p>${escapeHtml(paymentText(row.payment_status, row.payment_online))}</p>`,
     shop && row.clients
       ? `<p><a href="${SITE}/${encodeURIComponent(shop.slug)}/meus-agendamentos?t=${row.clients.access_token}">Ver ou cancelar meus agendamentos</a></p>`
       : "",
