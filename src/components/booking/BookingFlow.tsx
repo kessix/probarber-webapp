@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { Check, ChevronLeft, Clock, Copy, MapPin, Phone, QrCode, Scissors, Star, Store } from "lucide-react";
-import { priceOn, socialUrl, type Barbershop, type Service } from "@/lib/barbershops";
+import { Check, ChevronLeft, Clock, Copy, QrCode, Store } from "lucide-react";
+import { priceOn, type Barbershop, type Service } from "@/lib/barbershops";
+import { isToken, loadProfile, saveProfile, saveToken } from "@/lib/client-memory";
 import { formatBRL, formatDayLong, fromDateKey, weekdayShort } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { ShopHeader } from "./ShopHeader";
 import "./booking.css";
 
 type Step = "dados" | "servico" | "horario" | "pagamento" | "pix" | "ok";
@@ -58,11 +60,31 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
     // sem "voltar" no Pix: o agendamento já foi criado e segura o horário
   };
 
+  /** Guarda neste aparelho quem agendou e o código que abre "Meus agendamentos". */
+  function rememberClient(id: string) {
+    saveProfile({ name: name.trim(), email: email.trim() });
+    supabase
+      .rpc("client_access_token", { p_appointment_id: id })
+      .then(({ data }) => {
+        if (isToken(data)) saveToken(shop.slug, data);
+      }, () => undefined);
+  }
+
   /** Um e-mail de confirmação por agendamento, se o cliente aceitou notificações. Falha em silêncio. */
   function notify(id: string) {
     if (!notifications) return;
     fetch(`/api/appointments/${id}/notify`, { method: "POST" }).catch(() => undefined);
   }
+
+  // Preenche nome e e-mail com o que este aparelho já guardou de um agendamento anterior.
+  useEffect(() => {
+    const saved = loadProfile();
+    if (!saved) return;
+    Promise.resolve().then(() => {
+      setName((current) => current || saved.name);
+      setEmail((current) => current || saved.email);
+    });
+  }, []);
 
   // Enquanto o QR Code está na tela, consulta o pagamento a cada 3 segundos.
   useEffect(() => {
@@ -142,6 +164,7 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
     setSaving(false);
     if (!error && typeof data === "string") {
       setAppointmentId(data);
+      rememberClient(data);
       return data;
     }
 
@@ -237,29 +260,12 @@ export function BookingFlow({ shop }: { shop: Barbershop }) {
     }
   }
 
-  const instagram = socialUrl("instagram", shop.instagram);
-  const facebook = socialUrl("facebook", shop.facebook);
-  const google = socialUrl("web", shop.googleReviewUrl);
   const previous = back[step];
 
   return (
     <main className="bk" style={{ "--brand": shop.color } as CSSProperties}>
       <div className="bk-wrap">
-        <header className="bk-head">
-          {shop.logoUrl ? (
-            <Image className="bk-logo-img" src={shop.logoUrl} alt={`Logo da ${shop.name}`} width={88} height={88} unoptimized priority />
-          ) : (
-            <span className="bk-logo"><Scissors size={22} /></span>
-          )}
-          <h1>{shop.name}</h1>
-          {shop.address ? <p className="bk-meta"><MapPin size={13} /> {shop.address}</p> : null}
-          <div className="bk-links">
-            {shop.phone ? <a href={`tel:+55${shop.phone}`}><Phone size={13} /> Ligar</a> : null}
-            {instagram ? <a href={instagram} target="_blank" rel="noopener noreferrer">Instagram</a> : null}
-            {facebook ? <a href={facebook} target="_blank" rel="noopener noreferrer">Facebook</a> : null}
-            {google ? <a href={google} target="_blank" rel="noopener noreferrer"><Star size={13} /> Avaliações</a> : null}
-          </div>
-        </header>
+        <ShopHeader shop={shop} showMyAppointments />
 
         {previous ? (
           <button type="button" className="bk-back" onClick={() => setStep(previous)}>

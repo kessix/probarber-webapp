@@ -15,9 +15,11 @@ type Row = {
   client_name: string;
   client_email: string | null;
   confirmation_sent_at: string | null;
-  clients: { notifications: boolean } | null;
-  barbershops: { name: string; address: string | null; phone: string | null } | null;
+  clients: { notifications: boolean; access_token: string } | null;
+  barbershops: { slug: string; name: string; address: string | null; phone: string | null } | null;
 };
+
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://probarberapp.com.br";
 
 const when = (iso: string) =>
   new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "full", timeStyle: "short" }).format(new Date(iso));
@@ -37,7 +39,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const { data: row, error } = await db
     .from("appointments")
     .select(
-      "id, starts_at, service_name, price_cents, status, payment_status, client_name, client_email, confirmation_sent_at, clients(notifications), barbershops(name, address, phone)",
+      "id, starts_at, service_name, price_cents, status, payment_status, client_name, client_email, confirmation_sent_at, clients(notifications, access_token), barbershops(slug, name, address, phone)",
     )
     .eq("id", id)
     .maybeSingle<Row>();
@@ -69,6 +71,9 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     shop?.address ? `<tr><td><strong>Endereço</strong></td><td>${escapeHtml(shop.address)}</td></tr>` : "",
     `</table>`,
     `<p>${escapeHtml(paymentText(row.payment_status))}</p>`,
+    shop && row.clients
+      ? `<p><a href="${SITE}/${encodeURIComponent(shop.slug)}/meus-agendamentos?t=${row.clients.access_token}">Ver ou cancelar meus agendamentos</a></p>`
+      : "",
     shop?.phone ? `<p>Para remarcar ou cancelar, fale com a barbearia: ${escapeHtml(maskPhone(shop.phone))}.</p>` : "",
   ];
 

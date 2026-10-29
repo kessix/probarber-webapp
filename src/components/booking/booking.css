@@ -79,3 +79,12 @@
 /* Aceite de notificações */
 .bk-consent { display: flex; align-items: flex-start; gap: 10px; margin: 2px 0 14px; color: var(--muted); font-size: .85rem; cursor: pointer; }
 .bk-consent input { accent-color: var(--brand); width: 18px; height: 18px; margin-top: 2px; flex: 0 0 auto; }
+
+/* Meus agendamentos */
+.bk-mine { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); font-size: .82rem; color: var(--fg); }
+.bk-mine:hover { border-color: var(--brand); color: var(--brand); }
+.bk-appt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-2); }
+.bk-appt-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bk-appt-main small { color: var(--muted); }
+.bk-appt.cancelado { opacity: .55; }
+.bk-appt .bk-ghost { padding: 8px 14px; font-size: .82rem; flex: 0 0 auto; }
